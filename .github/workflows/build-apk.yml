@@ -112,6 +112,18 @@ jobs:
             echo "::warning::No TELEGRAM_API_ID / TELEGRAM_API_HASH secrets set — building with default APP_ID=4. Login may be limited; add your own from my.telegram.org."
           fi
 
+      - name: Inject your GOOGLE_AUTH_CLIENT_ID (from repo secrets)
+        env:
+          GOOGLE_AUTH_CLIENT_ID: ${{ secrets.GOOGLE_AUTH_CLIENT_ID }}
+        run: |
+          BV=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          if [ -n "$GOOGLE_AUTH_CLIENT_ID" ]; then
+            sed -i "s#public static String ‎GOOGLE_AUTH_CLIENT_ID = .*#public static String GOOGLE_AUTH_CLIENT_ID = \"${GOOGLE_AUTH_CLIENT_ID}\";#" "$BV"
+            echo "Using custom GOOGLE_AUTH_CLIENT_ID from secrets."
+          else
+            echo "::warning::No GOOGLE_AUTH_CLIENT_ID secret set — building with default."
+          fi
+
       - name: Enable network logs for MTProxy diagnostics
         run: |
           BV=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
@@ -128,6 +140,21 @@ jobs:
             echo "Signing with your own keystore (secret KEYSTORE_BASE64)."
           else
             echo "::warning::No KEYSTORE_BASE64 secret — signing with the PUBLIC dummy key. Add your own keystore for a real fork."
+          fi
+    
+      - name: Set up google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj/google-services.json
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj_AppStandalone/google-services.json
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj_AppHockeyApp/google-services.json
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj_AppHuawei/google-services.json
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > TMessagesProj_App/google-services.json
+            echo "Using custom google-services.json (secret GOOGLE_SERVICES_JSON_BASE64)."
+          else
+            echo "::warning::No GOOGLE_SERVICES_JSON_BASE64 secret — using default one."
           fi
 
       - name: Check MTProxy architecture guards
