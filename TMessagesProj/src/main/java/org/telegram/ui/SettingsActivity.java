@@ -691,8 +691,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(UItem.asHeader("ZaStoGram"));
         items.add(SettingCell.Factory.of(1001, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, "Приватность", "Удалённые, самоуничтожение, view-once, скриншоты, реклама"));
         items.add(SettingCell.Factory.of(1003, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_folders, "Плагины", "Python-плагины (совместимы с exteraGram)"));
-        // ZaStoGram — каталог бесплатных прокси вынесен на отдельный экран (FreeProxySettingsActivity).
-        items.add(SettingCell.Factory.of(1004, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_data, getString(R.string.FreeProxyChannels), "Каталог каналов и настройки прокси"));
+        // Дубль «Настройки прокси» рядом с каталогом — быстро отключить нерабочий прокси, не уходя в общие настройки.
+        items.add(SettingCell.Factory.of(1004, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_data, getString(R.string.ProxySettings), null));
         // ZaStoGram — экран логов (всегда виден): просмотр, выборочная отправка, удаление.
         items.add(SettingCell.Factory.of(1005, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_logs, getString(R.string.ZaLogsTitle), "Просмотр и отправка логов"));
         items.add(UItem.asShadow(null));
@@ -749,10 +749,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         items.add(SettingCell.Factory.of(18, IconBackgroundColors.BLUE_LIGHT.top, IconBackgroundColors.BLUE_LIGHT.bottom, R.drawable.settings_faq, getString(R.string.TelegramFAQ)));
         items.add(SettingCell.Factory.of(23, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_features, getString(R.string.TelegramFeatures)));
         items.add(SettingCell.Factory.of(19, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_policy, getString(R.string.PrivacyPolicy)));
-        items.add(UItem.asShadow(null));
-        items.add(UItem.asHeader(getString(R.string.DurovLalka)));
-        items.add(SettingCell.Factory.of(24, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_channel, getString(R.string.OurChannel)));
-        items.add(SettingCell.Factory.of(25, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, getString(R.string.OurVpn)));
         items.add(UItem.asShadow(null));
 
         items.add(UItem.asCustomShadow(versionView));
@@ -836,7 +832,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentSettingFragment(new org.telegram.ui.Plugins.PluginsActivity());
                 break;
             case 1004:
-                presentSettingFragment(new FreeProxySettingsActivity());
+                presentSettingFragment(new ProxyListActivity());
                 break;
             case 1005:
                 presentSettingFragment(new LogsActivity());

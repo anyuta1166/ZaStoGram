@@ -323,7 +323,7 @@ public class SharedConfig {
     public static int ivFontSize = 16;
     public static boolean proxyRotationEnabled;
     public static int proxyRotationTimeout;
-    public static boolean showZapretVpnSponsor = true;
+    public static boolean showZapretVpnSponsor = false;
     public static boolean mtProxyClientHelloFragmentation;
     public static boolean mtProxySoftMux = true;
     public static int mtProxyConnectionPatternMode;
@@ -641,7 +641,7 @@ public class SharedConfig {
             storageCacheDir = preferences.getString("storageCacheDir", null);
             proxyRotationEnabled = preferences.getBoolean("proxyRotationEnabled", false);
             proxyRotationTimeout = clampProxyRotationTimeout(preferences.getInt("proxyRotationTimeout", ProxyRotationController.DEFAULT_TIMEOUT_INDEX));
-            showZapretVpnSponsor = preferences.getBoolean("showZapretVpnSponsor", true);
+            showZapretVpnSponsor = preferences.getBoolean("showZapretVpnSponsor", false);
             mtProxyClientHelloFragmentation = preferences.getBoolean("mtProxyClientHelloFragmentation", false);
             mtProxySoftMux = preferences.getBoolean("mtProxySoftMux", true);
             mtProxyConnectionPatternMode = clampInt(preferences.getInt("mtProxyConnectionPatternMode", 0), 0, 4);

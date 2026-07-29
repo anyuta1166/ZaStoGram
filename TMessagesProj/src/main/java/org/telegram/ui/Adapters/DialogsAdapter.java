@@ -234,12 +234,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
         if (ZaStoPrivacy.DISABLE_ADS) {
             return false;
         }
-        return SharedConfig.showZapretVpnSponsor &&
-                folderId == 0 &&
-                dialogsType == DialogsActivity.DIALOGS_TYPE_DEFAULT &&
-                !isOnlySelect &&
-                parentFragment != null &&
-                !parentFragment.isArchive();
+        return false;
     }
 
     public boolean isZapretVpnSponsorDialog(int position) {
