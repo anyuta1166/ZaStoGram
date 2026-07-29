@@ -649,18 +649,6 @@ public class SharedConfig {
             mtProxyTimingMode = clampInt(preferences.getInt("mtProxyTimingMode", 0), 0, 2);
             mtProxyStartupCoverMode = clampInt(preferences.getInt("mtProxyStartupCoverMode", 0), 0, 2);
             wssTransportMode = normalizeWssTransportMode(preferences.getInt("wssTransportMode", TRANSPORT_LEGACY_PROXY));
-            // Auto-enable official Telegram WSS once on first run. Official
-            // routes are native MTProto-over-WebSocket for DC2/DC4, not a
-            // local SOCKS bridge and not a custom gateway.
-            if (!preferences.getBoolean("wss_default_applied", false)) {
-                if (wssTransportMode == TRANSPORT_LEGACY_PROXY) {
-                    wssTransportMode = TRANSPORT_WSS_OFFICIAL;
-                }
-                preferences.edit()
-                        .putInt("wssTransportMode", wssTransportMode)
-                        .putBoolean("wss_default_applied", true)
-                        .apply();
-            }
             wssHost = preferences.getString("wssHost", "");
             wssPort = preferences.getInt("wssPort", 443);
             if (wssPort <= 0 || wssPort > 65535) {
@@ -1679,31 +1667,6 @@ public class SharedConfig {
             ProxyInfo info = currentWssSocksProxy = new ProxyInfo(wssSocksAddress, wssSocksPort, wssSocksUsername, wssSocksPassword, "");
             proxyList.add(0, info);
         }
-        ensureDefaultProxyEntry(preferences);
-    }
-
-    // Seeds a removable default SOCKS5 entry (127.0.0.1:1353) into the proxy
-    // list once, mirroring tdesktop's ensureDefaultProxy. It is NOT selected
-    // or forced - just a convenience row the user can use (if a local bypass
-    // tool listens on 1353) or delete. WSS stays opt-in and is untouched here.
-    private static void ensureDefaultProxyEntry(SharedPreferences preferences) {
-        if (preferences.getBoolean("default_proxy_added", false)) {
-            return;
-        }
-        for (ProxyInfo existing : proxyList) {
-            if (existing != null
-                    && "127.0.0.1".equals(existing.address)
-                    && existing.port == 1353
-                    && TextUtils.isEmpty(existing.secret)
-                    && existing.transportMode == TRANSPORT_LEGACY_PROXY) {
-                preferences.edit().putBoolean("default_proxy_added", true).apply();
-                return;
-            }
-        }
-        ProxyInfo info = new ProxyInfo("127.0.0.1", 1353, "", "", "");
-        proxyList.add(0, info);
-        saveProxyList();
-        preferences.edit().putBoolean("default_proxy_added", true).apply();
     }
 
     public static void saveProxyList() {
