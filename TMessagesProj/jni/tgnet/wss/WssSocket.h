@@ -26,7 +26,8 @@ struct Route {
     bool viaFallback = false;
 };
 
-// Telegram's public web relays exist only for production DC2/DC4.
+// Telegram's public web relays cover production DC1-DC5. Media connections
+// use the corresponding -1 relay, matching Telegram Web's transport catalog.
 bool OfficialRoute(int32_t dcId, bool mediaConnection, bool testBackend, Route *route);
 
 class Socket final : public transport::Socket {
@@ -58,6 +59,12 @@ private:
         Closed,
     };
 
+    enum class IoWait : uint8_t {
+        None,
+        Read,
+        Write,
+    };
+
     bool finishTcpConnect(std::string *diagnostic);
     bool startTls(std::string *diagnostic);
     bool pumpTls(std::string *diagnostic);
@@ -67,13 +74,16 @@ private:
     bool parseHttpResponse(std::string *diagnostic);
     bool parseFrames(std::vector<std::vector<uint8_t>> &payloads, std::string *diagnostic);
     bool queueFrame(uint8_t opcode, const uint8_t *data, uint32_t size, std::string *diagnostic);
+    void setIoWait(IoWait wait, const char *operation);
     void noteAttemptFailed();
     void noteUpgradeSucceeded();
-
+    const char *stateName() const;
+    const char *ioWaitName() const;
     Route routeConfig;
     SSL *ssl = nullptr;
     int socketFd = -1;
     State state = State::Closed;
+    IoWait ioWait = IoWait::None;
     transport::HandshakePhase phase = transport::HandshakePhase::None;
     std::vector<uint8_t> pendingOutput;
     size_t pendingOutputOffset = 0;

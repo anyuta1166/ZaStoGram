@@ -480,7 +480,12 @@ void Connection::connect() {
         }
         setMtProxyHandshakePriority(mtProxyHandshakePriority);
     }
-    openConnection(hostAddress, hostPort, secret, ipv6 != 0, ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentNetworkType, currentDatacenter->getDatacenterId(), isMediaConnection);
+    // WSS relay selection follows the traffic class, not whether this DC
+    // happened to publish a media_only IP address. Telegram Web routes both
+    // downloads and uploads through the per-DC -1 endpoint.
+    const bool wssMediaRoute = isMediaConnectionType(connectionType)
+            || (connectionType & ConnectionTypeUpload) != 0;
+    openConnection(hostAddress, hostPort, secret, ipv6 != 0, ConnectionsManager::getInstance(currentDatacenter->instanceNum).currentNetworkType, currentDatacenter->getDatacenterId(), wssMediaRoute);
     if (connectionType == ConnectionTypeProxy) {
         setTimeout(5);
     } else if (connectionType == ConnectionTypePush) {
@@ -592,9 +597,14 @@ bool Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
     uint32_t packetLength;
 
     uint8_t useSecret = 0;
-    bool forceProxyLikeInitForWss = isCurrentTransportWss();
     if (!firstPacketSent) {
-        if (!overrideProxyAddress.empty()) {
+        if (isCurrentTransportWss()) {
+            // WSS has its own official route and never inherits the secret of
+            // the TCP dcOption that happened to be selected before transport
+            // dispatch. Otherwise a direct WSS connection is accidentally
+            // encoded as MTProxy and media auth fails on every affected DC.
+            useSecret = 0;
+        } else if (!overrideProxyAddress.empty()) {
             if (!overrideProxySecret.empty()) {
                 useSecret = 1;
             } else if (!secret.empty()) {
@@ -664,6 +674,7 @@ bool Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
         buffer2 = nullptr;
     }
     uint8_t *bytes = buffer->bytes();
+    const uint32_t wssHandshakePrefixSize = !firstPacketSent && isCurrentTransportWss() ? 64 : 0;
 
     if (!firstPacketSent) {
         buffer->position(64);
@@ -680,7 +691,11 @@ bool Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
                     bytes[56] = bytes[57] = bytes[58] = bytes[59] = 0xee;
                 }
 
-                if (useSecret != 0 || forceProxyLikeInitForWss) {
+                // The official WebSocket hostname already selects both the
+                // datacenter and the traffic class (kwsN / kwsN-1). Match
+                // Telegram Web and keep bytes 60..61 random for direct WSS;
+                // a DC marker belongs only to MTProxy secret transports.
+                if (useSecret != 0) {
                     int16_t datacenterId;
                     if (isMediaConnection) {
                         if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
@@ -758,15 +773,13 @@ bool Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
     }
 
     buffer->rewind();
-    writeBuffer(buffer);
     buff->rewind();
     AES_ctr128_encrypt(buff->bytes(), buff->bytes(), buff->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
-    writeBuffer(buff);
     if (buffer2 != nullptr) {
         AES_ctr128_encrypt(buffer2->bytes(), buffer2->bytes(), buffer2->limit(), &encryptKey, encryptIv, encryptCount, &encryptNum);
-        writeBuffer(buffer2);
     }
-    return !isClosingOrClosedForWrites();
+    return writeTransportPacket(buffer, buff, buffer2, wssHandshakePrefixSize)
+            && !isClosingOrClosedForWrites();
 }
 
 inline std::string *Connection::getCurrentSecret(uint8_t secretType) {
