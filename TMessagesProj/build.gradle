@@ -101,7 +101,7 @@ def zastoRequestedAbiFilter = (project.findProperty("zastoAbiFilter") ?: System.
 if (zastoRequestedAbiFilter && !zastoAllNativeAbis.contains(zastoRequestedAbiFilter)) {
     throw new GradleException("Unsupported zastoAbiFilter '${zastoRequestedAbiFilter}'. Expected one of: ${zastoAllNativeAbis.join(', ')}")
 }
-def zastoUpdateChannel = (project.findProperty("zastoUpdateChannel") ?: System.getenv("ZASTO_UPDATE_CHANNEL") ?: "stable").toString().trim().toLowerCase()
+def zastoUpdateChannel = (project.findProperty("zastoUpdateChannel") ?: System.getenv("ZASTO_UPDATE_CHANNEL") ?: "dev").toString().trim().toLowerCase()
 if (!(zastoUpdateChannel in ["dev", "stable"])) {
     throw new GradleException("Unsupported ZaStoGram update channel '${zastoUpdateChannel}'. Expected dev or stable")
 }

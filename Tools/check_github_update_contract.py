@@ -77,7 +77,7 @@ def main() -> int:
         failures.append("LaunchActivity must return from the custom updater before Telegram TL_help_getAppUpdate")
 
     for literal in (
-        'System.getenv("ZASTO_UPDATE_CHANNEL") ?: "stable"',
+        'System.getenv("ZASTO_UPDATE_CHANNEL") ?: "dev"',
         'buildConfigField "String", "ZASTO_UPDATE_CHANNEL"',
         'buildConfigField "String", "ZASTO_RELEASE_TAG"',
         'buildConfigField "String", "ZASTO_GITHUB_REPOSITORY"',
