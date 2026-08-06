@@ -5,6 +5,7 @@ if (!(zastoBuildNumberText ==~ /\d+/) || zastoBuildNumberText.toInteger() > 9999
     throw new GradleException("Invalid ZaStoGram build number '${zastoBuildNumberText}'. Expected an integer from 0 to 9999")
 }
 def zastoBuildNumber = zastoBuildNumberText.toInteger()
+println "DEBUG: zastoBuildNumber=${zastoBuildNumber}"
 
 repositories {
     mavenCentral()
@@ -164,6 +165,11 @@ android {
             // be installed over the previous prerelease even when APP_VERSION_CODE did
             // not change between workflow runs.
             def abiVersionDigit = variant.productFlavors.get(0).abiVersionCode % 10
+            println "DEBUG: variant=${variant.name}"
+            println "DEBUG: defaultConfig.versionCode=${defaultConfig.versionCode}"
+            println "DEBUG: abiVersionCode=${variant.productFlavors.get(0).abiVersionCode}"
+            println "DEBUG: abiVersionDigit=${abiVersionDigit}"
+            println "DEBUG: finalVersionCode=${defaultConfig.versionCode * 100000 + zastoBuildNumber * 10 + abiVersionDigit}"
             output.versionCodeOverride = defaultConfig.versionCode * 100000 + zastoBuildNumber * 10 + abiVersionDigit
         }
     }
