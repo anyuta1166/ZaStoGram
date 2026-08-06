@@ -106,7 +106,7 @@ if (!(zastoUpdateChannel in ["dev", "stable"])) {
     throw new GradleException("Unsupported ZaStoGram update channel '${zastoUpdateChannel}'. Expected dev or stable")
 }
 def zastoReleaseTag = (project.findProperty("zastoReleaseTag") ?: System.getenv("ZASTO_RELEASE_TAG") ?: "").toString().trim()
-def zastoGithubRepository = (project.findProperty("zastoGithubRepository") ?: System.getenv("ZASTO_GITHUB_REPOSITORY") ?: "youtubediscord/ZaStoGram").toString().trim()
+def zastoGithubRepository = (project.findProperty("zastoGithubRepository") ?: System.getenv("ZASTO_GITHUB_REPOSITORY") ?: "anyuta1166/ZaStoGram").toString().trim()
 if (!(zastoGithubRepository ==~ /[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/)) {
     throw new GradleException("Invalid ZaStoGram GitHub repository '${zastoGithubRepository}'. Expected owner/repository")
 }
