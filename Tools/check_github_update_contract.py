@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTROLLER = ROOT / "TMessagesProj_AppStandalone/src/main/java/org/telegram/messenger/GitHubUpdaterController.java"
+HTTP_GET_FILE_TASK = ROOT / "TMessagesProj/src/main/java/org/telegram/ui/web/HttpGetFileTask.java"
 LOADER = ROOT / "TMessagesProj_AppStandalone/src/main/java/org/telegram/messenger/ApplicationLoaderImpl.java"
 LAYOUT = ROOT / "TMessagesProj_AppStandalone/src/main/java/org/telegram/ui/Components/GitHubUpdateLayout.java"
 ALERT = ROOT / "TMessagesProj_AppStandalone/src/main/java/org/telegram/ui/Components/GitHubUpdateAlertDialog.java"
@@ -14,6 +15,9 @@ LAUNCH = ROOT / "TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java
 BETA_UPDATE = ROOT / "TMessagesProj/src/main/java/org/telegram/messenger/BetaUpdate.java"
 LIB_GRADLE = ROOT / "TMessagesProj/build.gradle"
 APP_GRADLE = ROOT / "TMessagesProj_AppStandalone/build.gradle"
+ROOT_GRADLE = ROOT / "build.gradle"
+STANDALONE_MANIFEST = ROOT / "TMessagesProj/config/release/AndroidManifest_standalone.xml"
+GOOGLE_SERVICES = ROOT / "TMessagesProj_AppStandalone/google-services.json"
 WORKFLOW = ROOT / ".github/workflows/build-apk.yml"
 
 
@@ -32,6 +36,7 @@ def require(text: str, literal: str, description: str, failures: list[str]) -> N
 
 def main() -> int:
     controller = read(CONTROLLER)
+    http_get_file_task = read(HTTP_GET_FILE_TASK)
     loader = read(LOADER)
     layout = read(LAYOUT)
     alert = read(ALERT)
@@ -39,6 +44,9 @@ def main() -> int:
     beta_update = read(BETA_UPDATE)
     lib_gradle = read(LIB_GRADLE)
     app_gradle = read(APP_GRADLE)
+    root_gradle = read(ROOT_GRADLE)
+    standalone_manifest = read(STANDALONE_MANIFEST)
+    google_services = read(GOOGLE_SERVICES)
     workflow = read(WORKFLOW)
     failures: list[str] = []
 
@@ -62,10 +70,25 @@ def main() -> int:
         'candidate.releaseTag.equals(getInstalledReleaseTag())',
         'ApplicationLoader.getApplicationId().equals(packageInfo.packageName)',
         'file.length() != assetSize',
+        'asset.optLong("id", 0L)',
+        '"zastogram-update-" + releaseId + "-" + assetId + ".apk.part"',
+        '.setDestFile(partialFile)',
+        '.setResumeExistingFile(true)',
+        '.setKeepPartialFileOnCancel(true)',
         'setHeader("X-GitHub-Api-Version", "2022-11-28")',
         'setHeader("User-Agent", "ZaStoGram-Android-Updater")',
     ):
         require(controller, literal, "GitHub updater channel/asset safety contract", failures)
+
+    for literal in (
+        'urlConnection.setRequestProperty("Range", "bytes=" + downloadedSize + "-")',
+        'status == HttpURLConnection.HTTP_PARTIAL',
+        'parseContentRangeStart(urlConnection.getHeaderField("Content-Range"))',
+        'new FileOutputStream(file, resuming)',
+        'downloadedSize != totalSize',
+        'keepPartialFileOnCancel',
+    ):
+        require(http_get_file_task, literal, "HTTP file resume contract", failures)
 
     if "github.token" in controller.lower() or "authorization" in controller.lower():
         failures.append("Android updater must use the public GitHub Releases API without embedding credentials")
@@ -83,7 +106,19 @@ def main() -> int:
         'buildConfigField "String", "ZASTO_GITHUB_REPOSITORY"',
         'buildConfigField "int", "ZASTO_BUILD_NUMBER"',
     ):
-        require(lib_gradle, literal, "BuildConfig update-channel identity", failures)
+        require(app_gradle, literal, "Standalone package/update identity", failures)
+
+    if "ZASTO_UPDATE_CHANNEL" in lib_gradle:
+        failures.append("Update-channel identity belongs to the standalone application BuildConfig, not the shared library")
+    require(standalone_manifest, 'android:label="@string/ZastoApplicationName"', "Channel-specific Android app label", failures)
+    require(google_services, '"package_name": "org.zastogram.messenger.dev"', "Dev Google services package mapping", failures)
+
+    for text, description in (
+        (controller, "GitHub updater controller"),
+        (layout, "GitHub update drawer UI"),
+        (alert, "GitHub update alert UI"),
+    ):
+        require(text, "org.telegram.messenger.web.BuildConfig", description, failures)
 
     require(
         app_gradle,
