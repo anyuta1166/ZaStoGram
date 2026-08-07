@@ -117,6 +117,16 @@ def check_gradle(gradle_text: str) -> list[str]:
         if literal not in gradle_text:
             errors.append(f"Standalone Gradle file is missing GitHub version-code contract literal: {literal}")
 
+    for literal in (
+        "ZASTO_RELEASE_KEYSTORE",
+        "ZASTO_RELEASE_STORE_PASSWORD_FILE",
+        "ZASTO_RELEASE_KEY_PASSWORD_FILE",
+        "ZASTO_RELEASE_KEY_ALIAS_FILE",
+        "zastoExternalSigningValues.any { it } && !zastoExternalSigningValues.every { it }",
+    ):
+        if literal not in gradle_text:
+            errors.append(f"Standalone Gradle file is missing secure local signing contract literal: {literal}")
+
     if "standaloneBuildFlavors = [\"afat\", \"arm64\", \"armv7\", \"x86\", \"x64\"]" not in gradle_text:
         errors.append("variantFilter must keep an explicit allow-list for afat and the ABI standalone flavors")
 
@@ -201,6 +211,7 @@ def check_workflow(workflow_text: str) -> list[str]:
         "ZASTO_GITHUB_REPOSITORY: ${{ github.repository }}",
         "release:",
         "needs: build",
+        "if: ${{ success() && github.event_name == 'workflow_dispatch' }}",
         "actions/download-artifact@v4",
         "pattern: ZaStoGram-standalone-*",
         "merge-multiple: true",
@@ -222,6 +233,12 @@ def check_workflow(workflow_text: str) -> list[str]:
 
     if "gh release upload" in workflow_text and "--clobber" in workflow_text:
         errors.append("Workflow must not clobber release assets; each run needs a fresh prerelease tag")
+
+    if re.search(
+        r"(?ms)^  release:\n.*?^    if: \$\{\{ success\(\) \}\}",
+        workflow_text,
+    ):
+        errors.append("Push-triggered background builds must not publish GitHub releases")
 
     for expected in ABI_FLAVORS.values():
         matrix_literals = [
