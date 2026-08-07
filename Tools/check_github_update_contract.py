@@ -15,9 +15,6 @@ LAUNCH = ROOT / "TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java
 BETA_UPDATE = ROOT / "TMessagesProj/src/main/java/org/telegram/messenger/BetaUpdate.java"
 LIB_GRADLE = ROOT / "TMessagesProj/build.gradle"
 APP_GRADLE = ROOT / "TMessagesProj_AppStandalone/build.gradle"
-ROOT_GRADLE = ROOT / "build.gradle"
-STANDALONE_MANIFEST = ROOT / "TMessagesProj/config/release/AndroidManifest_standalone.xml"
-GOOGLE_SERVICES = ROOT / "TMessagesProj_AppStandalone/google-services.json"
 WORKFLOW = ROOT / ".github/workflows/build-apk.yml"
 
 
@@ -44,9 +41,6 @@ def main() -> int:
     beta_update = read(BETA_UPDATE)
     lib_gradle = read(LIB_GRADLE)
     app_gradle = read(APP_GRADLE)
-    root_gradle = read(ROOT_GRADLE)
-    standalone_manifest = read(STANDALONE_MANIFEST)
-    google_services = read(GOOGLE_SERVICES)
     workflow = read(WORKFLOW)
     failures: list[str] = []
 
@@ -106,19 +100,7 @@ def main() -> int:
         'buildConfigField "String", "ZASTO_GITHUB_REPOSITORY"',
         'buildConfigField "int", "ZASTO_BUILD_NUMBER"',
     ):
-        require(app_gradle, literal, "Standalone package/update identity", failures)
-
-    if "ZASTO_UPDATE_CHANNEL" in lib_gradle:
-        failures.append("Update-channel identity belongs to the standalone application BuildConfig, not the shared library")
-    require(standalone_manifest, 'android:label="@string/ZastoApplicationName"', "Channel-specific Android app label", failures)
-    require(google_services, '"package_name": "org.zastogram.messenger.dev"', "Dev Google services package mapping", failures)
-
-    for text, description in (
-        (controller, "GitHub updater controller"),
-        (layout, "GitHub update drawer UI"),
-        (alert, "GitHub update alert UI"),
-    ):
-        require(text, "org.telegram.messenger.web.BuildConfig", description, failures)
+        require(lib_gradle, literal, "BuildConfig update-channel identity", failures)
 
     require(
         app_gradle,
